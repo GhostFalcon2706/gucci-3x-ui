@@ -2,6 +2,7 @@ package model
 
 import (
 	"math"
+	"slices"
 	"strconv"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/isp"
@@ -107,4 +108,57 @@ func MultiplierSuffix(multiplier float64) string {
 // trimFloat renders a multiplier without trailing zeros: 2 -> "2", 1.5 -> "1.5".
 func trimFloat(f float64) string {
 	return strconv.FormatFloat(f, 'f', -1, 64)
+}
+
+// SameAs reports whether two client rows carry identical data. It exists
+// because ClientRecord stopped being comparable with == once AllowedISPs (a
+// slice) was added: the slice is compared element-wise and the rest of the
+// struct is compared by value.
+func (r ClientRecord) SameAs(other ClientRecord) bool {
+	if !slices.Equal(r.AllowedISPs, other.AllowedISPs) {
+		return false
+	}
+	type recordKey = struct {
+		Id                int
+		Email             string
+		SubID             string
+		UUID              string
+		Password          string
+		Auth              string
+		Flow              string
+		Security          string
+		Reverse           string
+		PrivateKey        string
+		PublicKey         string
+		AllowedIPs        string
+		PreSharedKey      string
+		KeepAlive         int
+		Secret            string
+		AdTag             string
+		LimitIP           int
+		TotalGB           int64
+		ExpiryTime        int64
+		Enable            bool
+		TgID              int64
+		Group             string
+		Comment           string
+		Reset             int
+		SpeedLevel        int
+		TrafficMultiplier float64
+		CreatedAt         int64
+		UpdatedAt         int64
+	}
+	flatten := func(v ClientRecord) recordKey {
+		return recordKey{
+			Id: v.Id, Email: v.Email, SubID: v.SubID, UUID: v.UUID, Password: v.Password,
+			Auth: v.Auth, Flow: v.Flow, Security: v.Security, Reverse: v.Reverse,
+			PrivateKey: v.PrivateKey, PublicKey: v.PublicKey, AllowedIPs: v.AllowedIPs,
+			PreSharedKey: v.PreSharedKey, KeepAlive: v.KeepAlive, Secret: v.Secret,
+			AdTag: v.AdTag, LimitIP: v.LimitIP, TotalGB: v.TotalGB, ExpiryTime: v.ExpiryTime,
+			Enable: v.Enable, TgID: v.TgID, Group: v.Group, Comment: v.Comment, Reset: v.Reset,
+			SpeedLevel: v.SpeedLevel, TrafficMultiplier: v.TrafficMultiplier,
+			CreatedAt: v.CreatedAt, UpdatedAt: v.UpdatedAt,
+		}
+	}
+	return flatten(r) == flatten(other)
 }

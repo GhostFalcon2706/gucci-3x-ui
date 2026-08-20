@@ -64,6 +64,7 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/getNewVlessEnc", a.getNewVlessEnc)
 	g.GET("/clientIps", a.getClientIps)
 	g.GET("/fail2banStatus", a.getFail2banStatus)
+	g.GET("/ispCatalog", a.getISPCatalog)
 
 	g.POST("/stopXrayService", a.stopXrayService)
 	g.POST("/restartXrayService", a.restartXrayService)
@@ -109,6 +110,14 @@ func (a *ServerController) status(c *gin.Context) { jsonObj(c, a.serverService.L
 
 func (a *ServerController) getFail2banStatus(c *gin.Context) {
 	jsonObj(c, a.serverService.GetFail2banStatus(), nil)
+}
+
+// getISPCatalog lists the access networks a client can be locked to, together
+// with the speed ladder and whether this host can actually shape traffic. The
+// client editor uses it to build its selectors and to warn instead of offering
+// a control that would do nothing.
+func (a *ServerController) getISPCatalog(c *gin.Context) {
+	jsonObj(c, service.GetClientLimitsCapabilities(), nil)
 }
 
 func parseHistoryBucket(c *gin.Context) (int, bool) {

@@ -63,6 +63,13 @@ func applyClientRecordMerge(row *model.ClientRecord, incoming *model.ClientRecor
 	}
 	row.Comment = incoming.Comment
 	row.Reset = incoming.Reset
+	// Speed tier / accounting coefficient / ISP lock are plain scalar settings:
+	// applied unconditionally so clearing them in the editor takes effect. The
+	// multiplier is normalized first so a 0 coming from an older client payload
+	// can never silently reset an existing 2x client back to 1x.
+	row.SpeedLevel = model.NormalizeSpeedLevel(incoming.SpeedLevel)
+	row.TrafficMultiplier = model.NormalizeTrafficMultiplier(incoming.TrafficMultiplier)
+	row.AllowedISPs = model.NormalizeAllowedISPs(incoming.AllowedISPs)
 	if incoming.CreatedAt > 0 && (row.CreatedAt == 0 || incoming.CreatedAt < row.CreatedAt) {
 		row.CreatedAt = incoming.CreatedAt
 	}
@@ -131,7 +138,7 @@ func (s *ClientService) SyncInbound(tx *gorm.DB, inboundId int, clients []model.
 
 		idByEmail[email] = row.Id
 
-		if *row == before {
+		if row.SameAs(before) {
 			continue
 		}
 		if err := tx.Save(row).Error; err != nil {
