@@ -880,8 +880,23 @@ type Client struct {
 	Group        string         `json:"group,omitempty" form:"group"` // Logical grouping label
 	Comment      string         `json:"comment" form:"comment"`       // Client comment
 	Reset        int            `json:"reset" form:"reset"`           // Reset period in days
-	CreatedAt    int64          `json:"created_at,omitempty"`         // Creation timestamp
-	UpdatedAt    int64          `json:"updated_at,omitempty"`         // Last update timestamp
+
+	// SpeedLevel is the per-client bandwidth tier. 0 = unlimited (full line
+	// speed), 1..MaxSpeedLevel step down through the configured ladder — each
+	// level is slower than the one before it. Enforced by the traffic shaper
+	// where the host allows it (see internal/shaper).
+	SpeedLevel int `json:"speedLevel" form:"speedLevel"`
+	// TrafficMultiplier scales how much quota each transferred byte consumes:
+	// 1 = normal, 2 = every byte counts double, 0.5 = half price. 0 means
+	// "unset" and is normalized to 1 (rows written before this field existed).
+	TrafficMultiplier float64 `json:"trafficMultiplier" form:"trafficMultiplier"`
+	// AllowedISPs restricts which access networks (ISP / mobile operator) may
+	// use this client's configs. Empty — or containing ISPAll — means every
+	// network is allowed. Values are ISP ids from internal/isp.
+	AllowedISPs []string `json:"allowedIsps,omitempty" form:"allowedIsps"`
+
+	CreatedAt int64 `json:"created_at,omitempty"` // Creation timestamp
+	UpdatedAt int64 `json:"updated_at,omitempty"` // Last update timestamp
 }
 
 type ClientRecord struct {
@@ -909,8 +924,16 @@ type ClientRecord struct {
 	Group        string `json:"group" gorm:"column:group_name;default:'';index:idx_client_record_group"`
 	Comment      string `json:"comment"`
 	Reset        int    `json:"reset" gorm:"default:0"`
-	CreatedAt    int64  `json:"createdAt" gorm:"autoCreateTime:milli"`
-	UpdatedAt    int64  `json:"updatedAt" gorm:"autoUpdateTime:milli"`
+
+	// SpeedLevel / TrafficMultiplier / AllowedISPs mirror the same fields on
+	// Client. AllowedISPs is stored as a JSON array so a client can be locked
+	// to several operators at once; NULL / empty means "all networks".
+	SpeedLevel        int      `json:"speedLevel" gorm:"column:speed_level;default:0"`
+	TrafficMultiplier float64  `json:"trafficMultiplier" gorm:"column:traffic_multiplier;default:1"`
+	AllowedISPs       []string `json:"allowedIsps" gorm:"serializer:json;column:allowed_isps"`
+
+	CreatedAt int64 `json:"createdAt" gorm:"autoCreateTime:milli"`
+	UpdatedAt int64 `json:"updatedAt" gorm:"autoUpdateTime:milli"`
 }
 
 func (ClientRecord) TableName() string { return "clients" }
@@ -1076,6 +1099,10 @@ func (c *Client) ToRecord() *ClientRecord {
 		CreatedAt:  c.CreatedAt,
 		UpdatedAt:  c.UpdatedAt,
 
+		SpeedLevel:        NormalizeSpeedLevel(c.SpeedLevel),
+		TrafficMultiplier: NormalizeTrafficMultiplier(c.TrafficMultiplier),
+		AllowedISPs:       NormalizeAllowedISPs(c.AllowedISPs),
+
 		PrivateKey:   c.PrivateKey,
 		PublicKey:    c.PublicKey,
 		AllowedIPs:   strings.Join(c.AllowedIPs, ","),
@@ -1128,6 +1155,10 @@ func (r *ClientRecord) ToClient() *Client {
 		Reset:      r.Reset,
 		CreatedAt:  r.CreatedAt,
 		UpdatedAt:  r.UpdatedAt,
+
+		SpeedLevel:        NormalizeSpeedLevel(r.SpeedLevel),
+		TrafficMultiplier: NormalizeTrafficMultiplier(r.TrafficMultiplier),
+		AllowedISPs:       NormalizeAllowedISPs(r.AllowedISPs),
 
 		PrivateKey:   r.PrivateKey,
 		PublicKey:    r.PublicKey,
