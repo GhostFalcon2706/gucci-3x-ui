@@ -39,11 +39,6 @@ export const ClientRecordSchema = z.object({
   keepAlive: z.number().optional(),
   secret: z.string().optional(),
   adTag: z.string().optional(),
-  // Per-client limits: bandwidth tier (0 = unlimited), traffic accounting
-  // coefficient (1 = normal) and the ISP lock (empty = every network).
-  speedLevel: z.number().optional(),
-  trafficMultiplier: z.number().optional(),
-  allowedIsps: z.array(z.string()).nullish().optional(),
   createdAt: z.number().optional(),
   updatedAt: z.number().optional(),
 }).loose();
@@ -213,9 +208,6 @@ export const ClientFormSchema = z.object({
   group: z.string(),
   comment: z.string(),
   enable: z.boolean(),
-  speedLevel: z.number().int().min(0).max(8),
-  trafficMultiplier: z.number().min(0.1, 'pages.clients.trafficMultiplierRange').max(100, 'pages.clients.trafficMultiplierRange'),
-  allowedIsps: z.array(z.string()),
   inboundIds: z.array(z.number()),
 });
 

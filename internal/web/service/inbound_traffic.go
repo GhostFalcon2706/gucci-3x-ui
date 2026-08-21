@@ -144,11 +144,6 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 		}
 	}
 	now := time.Now().UnixMilli()
-	// Per-client accounting coefficient: a client on x2 burns two bytes of
-	// quota for every byte actually transferred. Applied to the delta only —
-	// the inbound-level counters above stay untouched so the panel's own
-	// bandwidth figures keep reflecting reality.
-	multipliers := trafficMultipliersByEmail(tx, emails)
 	// Use atomic per-row UPDATE instead of read-modify-write Save. tx.Save
 	// issues UPDATEs in slice order, which varies between concurrent callers;
 	// on PostgreSQL two transactions locking the same rows in opposite order
@@ -159,12 +154,6 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 		if !ok || (t.Up == 0 && t.Down == 0) {
 			continue
 		}
-		multiplier := multipliers[ct.Email]
-		if multiplier == 0 {
-			multiplier = 1
-		}
-		chargedUp := model.ApplyTrafficMultiplier(t.Up, multiplier)
-		chargedDown := model.ApplyTrafficMultiplier(t.Down, multiplier)
 		if err = tx.Exec(
 			fmt.Sprintf(
 				`UPDATE client_traffics SET up = %s, down = %s, last_online = %s WHERE email = ?`,
@@ -172,7 +161,7 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 				database.ClampedAddExpr("down"),
 				database.GreatestExpr("last_online", "?"),
 			),
-			chargedUp, chargedDown, now, ct.Email,
+			t.Up, t.Down, now, ct.Email,
 		).Error; err != nil {
 			logger.Warning("AddClientTraffic update data ", err)
 		}

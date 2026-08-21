@@ -1002,13 +1002,6 @@ export const SCHEMAS: Record<string, unknown> = {
         },
         "type": "array"
       },
-      "allowedIsps": {
-        "description": "AllowedISPs restricts which access networks (ISP / mobile operator) may\nuse this client's configs. Empty — or containing ISPAll — means every\nnetwork is allowed. Values are ISP ids from internal/isp.",
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
       "auth": {
         "description": "Auth password (Hysteria)",
         "type": "string"
@@ -1088,10 +1081,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "description": "Security method (e.g., \"auto\", \"aes-128-gcm\")",
         "type": "string"
       },
-      "speedLevel": {
-        "description": "SpeedLevel is the per-client bandwidth tier. 0 = unlimited (full line\nspeed), 1..MaxSpeedLevel step down through the configured ladder — each\nlevel is slower than the one before it. Enforced by the traffic shaper\nwhere the host allows it (see internal/shaper).",
-        "type": "integer"
-      },
       "subId": {
         "description": "Subscription identifier",
         "type": "string"
@@ -1105,10 +1094,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "description": "Total traffic limit in GB",
         "format": "int64",
         "type": "integer"
-      },
-      "trafficMultiplier": {
-        "description": "TrafficMultiplier scales how much quota each transferred byte consumes:\n1 = normal, 2 = every byte counts double, 0.5 = half price. 0 means\n\"unset\" and is normalized to 1 (rows written before this field existed).",
-        "type": "number"
       },
       "updated_at": {
         "description": "Last update timestamp",
@@ -1124,11 +1109,9 @@ export const SCHEMAS: Record<string, unknown> = {
       "limitIp",
       "reset",
       "security",
-      "speedLevel",
       "subId",
       "tgId",
-      "totalGB",
-      "trafficMultiplier"
+      "totalGB"
     ],
     "type": "object"
   },
@@ -1163,12 +1146,6 @@ export const SCHEMAS: Record<string, unknown> = {
       },
       "allowedIPs": {
         "type": "string"
-      },
-      "allowedIsps": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
       },
       "auth": {
         "type": "string"
@@ -1227,10 +1204,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "security": {
         "type": "string"
       },
-      "speedLevel": {
-        "description": "SpeedLevel / TrafficMultiplier / AllowedISPs mirror the same fields on\nClient. AllowedISPs is stored as a JSON array so a client can be locked\nto several operators at once; NULL / empty means \"all networks\".",
-        "type": "integer"
-      },
       "subId": {
         "type": "string"
       },
@@ -1241,9 +1214,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "totalGB": {
         "format": "int64",
         "type": "integer"
-      },
-      "trafficMultiplier": {
-        "type": "number"
       },
       "updatedAt": {
         "format": "int64",
@@ -1256,7 +1226,6 @@ export const SCHEMAS: Record<string, unknown> = {
     "required": [
       "adTag",
       "allowedIPs",
-      "allowedIsps",
       "auth",
       "comment",
       "createdAt",
@@ -1276,11 +1245,9 @@ export const SCHEMAS: Record<string, unknown> = {
       "reverse",
       "secret",
       "security",
-      "speedLevel",
       "subId",
       "tgId",
       "totalGB",
-      "trafficMultiplier",
       "updatedAt",
       "uuid"
     ],

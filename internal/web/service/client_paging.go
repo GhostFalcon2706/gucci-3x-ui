@@ -27,11 +27,6 @@ type ClientSlim struct {
 	Reset      int                 `json:"reset"`
 	Group      string              `json:"group,omitempty"`
 	Comment    string              `json:"comment,omitempty"`
-	// Client-side limits surfaced in the list so the table can render the
-	// speed / multiplier / ISP-lock tags without a second round-trip.
-	SpeedLevel        int      `json:"speedLevel"`
-	TrafficMultiplier float64  `json:"trafficMultiplier"`
-	AllowedISPs       []string `json:"allowedIsps,omitempty"`
 	InboundIds []int               `json:"inboundIds"`
 	Traffic    *xray.ClientTraffic `json:"traffic,omitempty"`
 	CreatedAt  int64               `json:"createdAt"`
@@ -472,10 +467,6 @@ func (q clientQuery) pageRows(params ClientPageParams, onlines []string, offset,
 			Reset:      rec.Reset,
 			Group:      rec.Group,
 			Comment:    rec.Comment,
-
-			SpeedLevel:        model.NormalizeSpeedLevel(rec.SpeedLevel),
-			TrafficMultiplier: model.NormalizeTrafficMultiplier(rec.TrafficMultiplier),
-			AllowedISPs:       model.NormalizeAllowedISPs(rec.AllowedISPs),
 			InboundIds: attachments[rec.Id],
 			Traffic:    trafficByEmail[rec.Email],
 			CreatedAt:  rec.CreatedAt,

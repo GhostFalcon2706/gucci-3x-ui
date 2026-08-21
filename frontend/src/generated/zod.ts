@@ -260,7 +260,6 @@ export type ApiTokenView = z.infer<typeof ApiTokenViewSchema>;
 export const ClientSchema = z.object({
   adTag: z.string().optional(),
   allowedIPs: z.array(z.string()).optional(),
-  allowedIsps: z.array(z.string()).optional(),
   auth: z.string().optional(),
   comment: z.string(),
   created_at: z.number().int().optional(),
@@ -280,11 +279,9 @@ export const ClientSchema = z.object({
   reverse: z.lazy(() => ClientReverseSchema).nullable().optional(),
   secret: z.string().optional(),
   security: z.string(),
-  speedLevel: z.number().int(),
   subId: z.string(),
   tgId: z.number().int(),
   totalGB: z.number().int(),
-  trafficMultiplier: z.number(),
   updated_at: z.number().int().optional(),
 });
 export type Client = z.infer<typeof ClientSchema>;
@@ -300,7 +297,6 @@ export type ClientInbound = z.infer<typeof ClientInboundSchema>;
 export const ClientRecordSchema = z.object({
   adTag: z.string(),
   allowedIPs: z.string(),
-  allowedIsps: z.array(z.string()),
   auth: z.string(),
   comment: z.string(),
   createdAt: z.number().int(),
@@ -320,11 +316,9 @@ export const ClientRecordSchema = z.object({
   reverse: z.unknown(),
   secret: z.string(),
   security: z.string(),
-  speedLevel: z.number().int(),
   subId: z.string(),
   tgId: z.number().int(),
   totalGB: z.number().int(),
-  trafficMultiplier: z.number(),
   updatedAt: z.number().int(),
   uuid: z.string(),
 });

@@ -165,11 +165,6 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Collected while walking the inbounds: every enabled client that is locked
-	// to specific access networks, so the routing rules can be injected once at
-	// the end (see injectISPLocks).
-	var ispLocks []ispLockEntry
-	seenISPLock := make(map[string]struct{})
 	for _, inbound := range inbounds {
 		if !inbound.Enable {
 			continue
@@ -244,20 +239,8 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 					entry["auth"] = c.Auth
 				}
 			case model.WireGuard:
-				// WireGuard peers are not xray "users", so routing cannot match
-				// them by email — an ISP lock is impossible there and must not
-				// be faked.
-				if len(model.NormalizeAllowedISPs(c.AllowedISPs)) > 0 {
-					logger.Warningf("ISP lock on client %s is not supported for WireGuard inbounds and was not applied", c.Email)
-				}
 				wgPeers = append(wgPeers, model.WireguardPeerFromClient(c))
 				continue
-			}
-			if allowed := model.NormalizeAllowedISPs(c.AllowedISPs); len(allowed) > 0 {
-				if _, dup := seenISPLock[c.Email]; !dup {
-					seenISPLock[c.Email] = struct{}{}
-					ispLocks = append(ispLocks, ispLockEntry{email: c.Email, ids: allowed})
-				}
 			}
 			finalClients = append(finalClients, entry)
 		}
@@ -397,10 +380,6 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 	} else {
 		injectNodeEgresses(xrayConfig, nodes)
 	}
-
-	// Per-client ISP locks go in last so their rules sit in front of every
-	// other rule, including the egress bridges injected above.
-	injectISPLocks(xrayConfig, ispLocks)
 
 	return xrayConfig, nil
 }
