@@ -28,6 +28,7 @@ import { HttpUtil, RandomUtil, Wireguard } from '@/utils';
 import { formatInboundLabel } from '@/lib/inbounds/label';
 import { generateMtprotoSecret } from '@/lib/xray/inbound-defaults';
 import { normalizeClientIps, type ClientIpInfo } from '@/lib/clients/ip-log';
+import { ISP_ALL_VALUE, ispSelectValue, resolveIspSelection } from '@/lib/clients/isp-selection';
 import { DateTimePicker, SelectAllClearButtons } from '@/components/form';
 import { FormField } from '@/components/form/rhf';
 import { TLS_FLOW_CONTROL } from '@/schemas/primitives';
@@ -42,10 +43,6 @@ const VMESS_SECURITY_OPTIONS = ['auto', 'aes-128-gcm', 'chacha20-poly1305'] as c
 const MULTI_CLIENT_PROTOCOLS = new Set([
   'shadowsocks', 'vless', 'vmess', 'trojan', 'hysteria', 'wireguard', 'mtproto',
 ]);
-
-// Sentinel value of the "All networks" entry in the ISP selector. It is never
-// sent to the server: picking it clears the restriction.
-const ISP_ALL_VALUE = 'all';
 
 const CLIENT_FORM_MODAL_Z_INDEX = 1000;
 const CLIENT_IP_LOG_MODAL_Z_INDEX = CLIENT_FORM_MODAL_Z_INDEX + 1;
@@ -241,6 +238,7 @@ export default function ClientFormModal({
       { key: 'fixed', label: t('pages.clients.ispKindFixed') },
       { key: 'wireless', label: t('pages.clients.ispKindWireless') },
       { key: 'satellite', label: t('pages.clients.ispKindSatellite') },
+      { key: 'other', label: t('pages.clients.ispKindOther') },
     ].filter((g) => (byKind[g.key] || []).length > 0)
       .map((g) => ({ label: g.label, options: byKind[g.key] }));
     return [
@@ -250,13 +248,7 @@ export default function ClientFormModal({
   }, [limits.isps, t]);
 
   const onIspChange = (next: string[]) => {
-    // "All" is exclusive: selecting it drops every other pick, and picking a
-    // concrete network drops "All".
-    if (next.includes(ISP_ALL_VALUE) && !(allowedIsps || []).includes(ISP_ALL_VALUE)) {
-      methods.setValue('allowedIsps', []);
-      return;
-    }
-    methods.setValue('allowedIsps', next.filter((id) => id !== ISP_ALL_VALUE));
+    methods.setValue('allowedIsps', resolveIspSelection(allowedIsps || [], next));
   };
 
   const limitIpDisabled = !fail2ban.usable;
@@ -840,7 +832,7 @@ export default function ClientFormModal({
                         <Select
                           mode="multiple"
                           allowClear
-                          value={(allowedIsps || []).length === 0 ? [ISP_ALL_VALUE] : allowedIsps}
+                          value={ispSelectValue(allowedIsps)}
                           onChange={onIspChange}
                           options={ispOptions}
                           placeholder={t('pages.clients.allowedIspsPlaceholder')}

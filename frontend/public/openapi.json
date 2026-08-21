@@ -4144,6 +4144,75 @@
         }
       }
     },
+    "/panel/api/server/ispCatalog": {
+      "get": {
+        "tags": [
+          "Server"
+        ],
+        "summary": "Capabilities behind the per-client limits: the selectable ISP / operator catalog with the number of announced IP prefixes per entry, the speed-tier ladder, the traffic-multiplier bounds, whether this host can enforce speed limits (and why not), and the outcome of the last ISP-lock injection.",
+        "operationId": "get_panel_api_server_ispCatalog",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "isps": [
+                      {
+                        "id": "mci",
+                        "nameEn": "Hamrah-e Aval (MCI)",
+                        "nameFa": "همراه اول",
+                        "kind": "mobile",
+                        "asns": [
+                          197207
+                        ],
+                        "prefixes": 84
+                      }
+                    ],
+                    "speedLadder": [
+                      {
+                        "level": 0,
+                        "mbps": 0
+                      },
+                      {
+                        "level": 1,
+                        "mbps": 100
+                      }
+                    ],
+                    "shaping": {
+                      "available": false,
+                      "reason": "the panel process lacks CAP_NET_ADMIN"
+                    },
+                    "multiplier": {
+                      "min": 0.1,
+                      "max": 100
+                    },
+                    "ispLock": {
+                      "groups": 1,
+                      "clients": 3
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/panel/api/server/cpuHistory/{bucket}": {
       "get": {
         "tags": [

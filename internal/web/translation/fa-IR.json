@@ -867,7 +867,8 @@
       "ispKindFixed": "ثابت / ADSL / فیبر",
       "ispKindWireless": "بی‌سیم / TD-LTE",
       "ispKindSatellite": "ماهواره‌ای",
-      "ispNoData": "رنج IP اعلام‌شده ندارد — قابل اعمال نیست"
+      "ispNoData": "رنج IP اعلام‌شده ندارد — قابل اعمال نیست",
+      "ispKindOther": "سایر شبکه‌ها و ISPهای ایران"
     },
     "groups": {
       "name": "نام",

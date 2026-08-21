@@ -867,7 +867,8 @@
       "ispKindFixed": "Fixed / ADSL / FTTH",
       "ispKindWireless": "Wireless / TD-LTE",
       "ispKindSatellite": "Satellite",
-      "ispNoData": "no announced IP ranges — cannot be enforced"
+      "ispNoData": "no announced IP ranges — cannot be enforced",
+      "ispKindOther": "Other Iranian networks"
     },
     "groups": {
       "name": "الاسم",
