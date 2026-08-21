@@ -273,12 +273,6 @@ export const sections: readonly Section[] = [
       },
       {
         method: 'GET',
-        path: '/panel/api/server/ispCatalog',
-        summary: 'Capabilities behind the per-client limits: the selectable ISP / operator catalog with the number of announced IP prefixes per entry, the speed-tier ladder, the traffic-multiplier bounds, whether this host can enforce speed limits (and why not), and the outcome of the last ISP-lock injection.',
-        response: '{\n  "success": true,\n  "obj": {\n    "isps": [{ "id": "mci", "nameEn": "Hamrah-e Aval (MCI)", "nameFa": "همراه اول", "kind": "mobile", "asns": [197207], "prefixes": 84 }],\n    "speedLadder": [{ "level": 0, "mbps": 0 }, { "level": 1, "mbps": 100 }],\n    "shaping": { "available": false, "reason": "the panel process lacks CAP_NET_ADMIN" },\n    "multiplier": { "min": 0.1, "max": 100 },\n    "ispLock": { "groups": 1, "clients": 3 }\n  }\n}',
-      },
-      {
-        method: 'GET',
         path: '/panel/api/server/cpuHistory/:bucket',
         summary: 'Legacy: aggregated CPU history. Use /history/cpu/:bucket instead — same data with a uniform {t, v} shape.',
         params: [
