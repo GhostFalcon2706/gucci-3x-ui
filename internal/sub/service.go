@@ -1873,10 +1873,11 @@ func cloneStringMap(source map[string]string) map[string]string {
 // name-only part on displays); with no template it falls back to the inbound
 // remark, extra and email joined by "-".
 func (s *SubService) genRemark(inbound *model.Inbound, email string, extra string, transport string) string {
+	client := s.lookupClient(inbound, email)
 	if s.remarkTemplate != "" {
-		return s.genTemplatedRemark(inbound, s.lookupClient(inbound, email), extra, transport)
+		return s.genTemplatedRemark(inbound, client, extra, transport)
 	}
-	return fallbackRemark(inbound.Remark, extra, email)
+	return withMultiplierSuffix(client, fallbackRemark(inbound.Remark, extra, email))
 }
 
 func fallbackRemark(parts ...string) string {

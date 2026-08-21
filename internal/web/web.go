@@ -288,6 +288,7 @@ const (
 	cadenceXrayTraffic   = "@every 5s"
 	cadenceMtproto       = "@every 10s"
 	cadenceClientIPScan  = "@every 10s"
+	cadenceClientShaper  = "@every 10s"
 	cadenceNodeHeartbeat = "@every 5s"
 	cadenceNodeTraffic   = "@every 5s"
 	cadenceOutboundSub   = "@every 5m"
@@ -328,6 +329,11 @@ func (s *Server) startTask(restartXray bool, loc *time.Location) {
 
 	// check client ips from log file every 10 sec
 	_, _ = s.cron.AddJob(cadenceClientIPScan, job.NewCheckClientIpJob())
+
+	// Re-apply the per-client speed tiers right after the IP scan, so a client
+	// that just came online is shaped within one tick. Idles out immediately on
+	// hosts where traffic control is unavailable.
+	_, _ = s.cron.AddJob(cadenceClientShaper, job.NewClientShaperJob())
 
 	_, _ = s.cron.AddJob(cadenceNodeHeartbeat, job.NewNodeHeartbeatJob())
 

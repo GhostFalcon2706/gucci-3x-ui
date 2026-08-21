@@ -28,11 +28,13 @@ import { HttpUtil, RandomUtil, Wireguard } from '@/utils';
 import { formatInboundLabel } from '@/lib/inbounds/label';
 import { generateMtprotoSecret } from '@/lib/xray/inbound-defaults';
 import { normalizeClientIps, type ClientIpInfo } from '@/lib/clients/ip-log';
+import { ISP_ALL_VALUE, ispSelectValue, resolveIspSelection } from '@/lib/clients/isp-selection';
 import { DateTimePicker, SelectAllClearButtons } from '@/components/form';
 import { FormField } from '@/components/form/rhf';
 import { TLS_FLOW_CONTROL } from '@/schemas/primitives';
 import type { ClientRecord, InboundOption, ExternalLink, ExternalLinkInput } from '@/hooks/useClients';
 import { useFail2banStatusQuery, getLimitIpNotice } from '@/api/queries/useFail2banStatusQuery';
+import { useClientLimitsQuery } from '@/api/queries/useClientLimitsQuery';
 import { ClientFormSchema, ClientCreateFormSchema, type ClientFormValues } from '@/schemas/client';
 
 const FLOW_OPTIONS = Object.values(TLS_FLOW_CONTROL);
@@ -125,6 +127,9 @@ const EMPTY: Values = {
   group: '',
   comment: '',
   enable: true,
+  speedLevel: 0,
+  trafficMultiplier: 1,
+  allowedIsps: [],
   inboundIds: [],
   externalLinks: [],
   wgPrivateKey: '',
@@ -205,6 +210,47 @@ export default function ClientFormModal({
   const [ipsClearing, setIpsClearing] = useState(false);
   const [ipsModalOpen, setIpsModalOpen] = useState(false);
   const fail2ban = useFail2banStatusQuery();
+  const limits = useClientLimitsQuery();
+  const speedLevel = useWatch({ control: methods.control, name: 'speedLevel' });
+  const trafficMultiplier = useWatch({ control: methods.control, name: 'trafficMultiplier' });
+  const allowedIsps = useWatch({ control: methods.control, name: 'allowedIsps' });
+
+  const speedOptions = useMemo(() => limits.speedLadder.map(({ level, mbps }) => ({
+    value: level,
+    label: level === 0
+      ? t('pages.clients.speedUnlimited')
+      : `${t('pages.clients.speedLevelShort', { level })} — ${mbps >= 1 ? `${mbps} Mbps` : `${mbps * 1000} Kbps`}`,
+  })), [limits.speedLadder, t]);
+
+  const ispOptions = useMemo(() => {
+    const byKind: Record<string, { value: string; label: string; disabled?: boolean }[]> = {};
+    limits.isps.forEach((entry) => {
+      (byKind[entry.kind] ||= []).push({
+        value: entry.id,
+        label: entry.prefixes > 0
+          ? `${entry.nameFa} — ${entry.nameEn}`
+          : `${entry.nameFa} — ${entry.nameEn} (${t('pages.clients.ispNoData')})`,
+        disabled: entry.prefixes === 0,
+      });
+    });
+    const groups = [
+      { key: 'mobile', label: t('pages.clients.ispKindMobile') },
+      { key: 'fixed', label: t('pages.clients.ispKindFixed') },
+      { key: 'wireless', label: t('pages.clients.ispKindWireless') },
+      { key: 'satellite', label: t('pages.clients.ispKindSatellite') },
+      { key: 'other', label: t('pages.clients.ispKindOther') },
+    ].filter((g) => (byKind[g.key] || []).length > 0)
+      .map((g) => ({ label: g.label, options: byKind[g.key] }));
+    return [
+      { label: t('pages.clients.ispAllGroup'), options: [{ value: ISP_ALL_VALUE, label: t('pages.clients.ispAll') }] },
+      ...groups,
+    ];
+  }, [limits.isps, t]);
+
+  const onIspChange = (next: string[]) => {
+    methods.setValue('allowedIsps', resolveIspSelection(allowedIsps || [], next));
+  };
+
   const limitIpDisabled = !fail2ban.usable;
   const limitIpNotice = getLimitIpNotice(fail2ban, t);
 
@@ -233,6 +279,9 @@ export default function ClientFormModal({
         totalGB: bytesToGB(client.totalGB || 0),
         reset: Number(client.reset) || 0,
         limitIp: client.limitIp || 0,
+        speedLevel: client.speedLevel || 0,
+        trafficMultiplier: client.trafficMultiplier || 1,
+        allowedIsps: client.allowedIsps ?? [],
         tgId: Number(client.tgId) || 0,
         group: client.group || '',
         comment: client.comment || '',
@@ -495,6 +544,9 @@ export default function ClientFormModal({
       group: values.group,
       comment: values.comment,
       enable: values.enable,
+      speedLevel: values.speedLevel,
+      trafficMultiplier: values.trafficMultiplier,
+      allowedIsps: values.allowedIsps,
       inboundIds: values.inboundIds,
     });
     if (!validated.success) {
@@ -522,6 +574,12 @@ export default function ClientFormModal({
       group: values.group,
       comment: values.comment,
       enable: !!values.enable,
+      speedLevel: Number(values.speedLevel) || 0,
+      trafficMultiplier: Number(values.trafficMultiplier) || 1,
+      // An empty selection is the canonical "all networks" value; the backend
+      // normalizes it again so a stale UI can never widen or narrow a lock by
+      // accident.
+      allowedIsps: (values.allowedIsps || []).filter((id) => id !== ISP_ALL_VALUE),
     };
     const reverseTagValue = showReverseTag ? (values.reverseTag || '').trim() : '';
     if (reverseTagValue) {
@@ -721,6 +779,70 @@ export default function ClientFormModal({
                           </FormField>
                         </Col>
                       </Row>
+
+                      <Row gutter={16}>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            label={t('pages.clients.speedLimit')}
+                            tooltip={t('pages.clients.speedLimitDesc')}
+                            extra={!limits.shaping.available && (speedLevel ?? 0) > 0
+                              ? t('pages.clients.speedLimitUnavailable', { reason: limits.shaping.reason || '' })
+                              : undefined}
+                            validateStatus={!limits.shaping.available && (speedLevel ?? 0) > 0 ? 'warning' : undefined}
+                          >
+                            <Select
+                              value={speedLevel ?? 0}
+                              options={speedOptions}
+                              onChange={(v) => methods.setValue('speedLevel', Number(v) || 0)}
+                              style={{ width: '100%' }}
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            label={t('pages.clients.trafficMultiplier')}
+                            tooltip={t('pages.clients.trafficMultiplierDesc')}
+                            extra={(trafficMultiplier ?? 1) !== 1
+                              ? t('pages.clients.trafficMultiplierPreview', {
+                                  multiplier: trafficMultiplier,
+                                  used: Math.round(20 * (trafficMultiplier || 1) * 100) / 100,
+                                })
+                              : undefined}
+                          >
+                            <InputNumber
+                              value={trafficMultiplier ?? 1}
+                              min={limits.multiplier.min}
+                              max={limits.multiplier.max}
+                              step={0.1}
+                              style={{ width: '100%' }}
+                              addonBefore="x"
+                              onChange={(v) => methods.setValue('trafficMultiplier', Number(v) || 1)}
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+
+                      <Form.Item
+                        label={t('pages.clients.allowedIsps')}
+                        tooltip={t('pages.clients.allowedIspsDesc')}
+                        extra={(allowedIsps || []).length === 0
+                          ? t('pages.clients.allowedIspsAllHint')
+                          : t('pages.clients.allowedIspsCount', { count: (allowedIsps || []).length })}
+                      >
+                        <Select
+                          mode="multiple"
+                          allowClear
+                          value={ispSelectValue(allowedIsps)}
+                          onChange={onIspChange}
+                          options={ispOptions}
+                          placeholder={t('pages.clients.allowedIspsPlaceholder')}
+                          maxTagCount="responsive"
+                          listHeight={260}
+                          showSearch={{
+                            filterOption: (input, option) => ((option?.label as string) || '').toLowerCase().includes(input.toLowerCase()),
+                          }}
+                        />
+                      </Form.Item>
 
                       <Row gutter={16}>
                         <Col xs={24} md={12}>

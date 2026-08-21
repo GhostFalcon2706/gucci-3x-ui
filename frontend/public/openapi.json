@@ -1028,6 +1028,13 @@
             },
             "type": "array"
           },
+          "allowedIsps": {
+            "description": "AllowedISPs restricts which access networks (ISP / mobile operator) may\nuse this client's configs. Empty — or containing ISPAll — means every\nnetwork is allowed. Values are ISP ids from internal/isp.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "auth": {
             "description": "Auth password (Hysteria)",
             "type": "string"
@@ -1107,6 +1114,10 @@
             "description": "Security method (e.g., \"auto\", \"aes-128-gcm\")",
             "type": "string"
           },
+          "speedLevel": {
+            "description": "SpeedLevel is the per-client bandwidth tier. 0 = unlimited (full line\nspeed), 1..MaxSpeedLevel step down through the configured ladder — each\nlevel is slower than the one before it. Enforced by the traffic shaper\nwhere the host allows it (see internal/shaper).",
+            "type": "integer"
+          },
           "subId": {
             "description": "Subscription identifier",
             "type": "string"
@@ -1120,6 +1131,10 @@
             "description": "Total traffic limit in GB",
             "format": "int64",
             "type": "integer"
+          },
+          "trafficMultiplier": {
+            "description": "TrafficMultiplier scales how much quota each transferred byte consumes:\n1 = normal, 2 = every byte counts double, 0.5 = half price. 0 means\n\"unset\" and is normalized to 1 (rows written before this field existed).",
+            "type": "number"
           },
           "updated_at": {
             "description": "Last update timestamp",
@@ -1135,9 +1150,11 @@
           "limitIp",
           "reset",
           "security",
+          "speedLevel",
           "subId",
           "tgId",
-          "totalGB"
+          "totalGB",
+          "trafficMultiplier"
         ],
         "type": "object"
       },
@@ -1172,6 +1189,12 @@
           },
           "allowedIPs": {
             "type": "string"
+          },
+          "allowedIsps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
           "auth": {
             "type": "string"
@@ -1230,6 +1253,10 @@
           "security": {
             "type": "string"
           },
+          "speedLevel": {
+            "description": "SpeedLevel / TrafficMultiplier / AllowedISPs mirror the same fields on\nClient. AllowedISPs is stored as a JSON array so a client can be locked\nto several operators at once; NULL / empty means \"all networks\".",
+            "type": "integer"
+          },
           "subId": {
             "type": "string"
           },
@@ -1240,6 +1267,9 @@
           "totalGB": {
             "format": "int64",
             "type": "integer"
+          },
+          "trafficMultiplier": {
+            "type": "number"
           },
           "updatedAt": {
             "format": "int64",
@@ -1252,6 +1282,7 @@
         "required": [
           "adTag",
           "allowedIPs",
+          "allowedIsps",
           "auth",
           "comment",
           "createdAt",
@@ -1271,9 +1302,11 @@
           "reverse",
           "secret",
           "security",
+          "speedLevel",
           "subId",
           "tgId",
           "totalGB",
+          "trafficMultiplier",
           "updatedAt",
           "uuid"
         ],
@@ -4103,6 +4136,75 @@
                     "installed": true,
                     "usable": true,
                     "windows": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/server/ispCatalog": {
+      "get": {
+        "tags": [
+          "Server"
+        ],
+        "summary": "Capabilities behind the per-client limits: the selectable ISP / operator catalog with the number of announced IP prefixes per entry, the speed-tier ladder, the traffic-multiplier bounds, whether this host can enforce speed limits (and why not), and the outcome of the last ISP-lock injection.",
+        "operationId": "get_panel_api_server_ispCatalog",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "isps": [
+                      {
+                        "id": "mci",
+                        "nameEn": "Hamrah-e Aval (MCI)",
+                        "nameFa": "همراه اول",
+                        "kind": "mobile",
+                        "asns": [
+                          197207
+                        ],
+                        "prefixes": 84
+                      }
+                    ],
+                    "speedLadder": [
+                      {
+                        "level": 0,
+                        "mbps": 0
+                      },
+                      {
+                        "level": 1,
+                        "mbps": 100
+                      }
+                    ],
+                    "shaping": {
+                      "available": false,
+                      "reason": "the panel process lacks CAP_NET_ADMIN"
+                    },
+                    "multiplier": {
+                      "min": 0.1,
+                      "max": 100
+                    },
+                    "ispLock": {
+                      "groups": 1,
+                      "clients": 3
+                    }
                   }
                 }
               }

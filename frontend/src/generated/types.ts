@@ -244,6 +244,7 @@ export interface ApiTokenView {
 export interface Client {
   adTag?: string;
   allowedIPs?: string[];
+  allowedIsps?: string[];
   auth?: string;
   comment: string;
   created_at?: number;
@@ -263,9 +264,11 @@ export interface Client {
   reverse?: ClientReverse | null;
   secret?: string;
   security: string;
+  speedLevel: number;
   subId: string;
   tgId: number;
   totalGB: number;
+  trafficMultiplier: number;
   updated_at?: number;
 }
 
@@ -279,6 +282,7 @@ export interface ClientInbound {
 export interface ClientRecord {
   adTag: string;
   allowedIPs: string;
+  allowedIsps: string[];
   auth: string;
   comment: string;
   createdAt: number;
@@ -298,9 +302,11 @@ export interface ClientRecord {
   reverse: unknown;
   secret: string;
   security: string;
+  speedLevel: number;
   subId: string;
   tgId: number;
   totalGB: number;
+  trafficMultiplier: number;
   updatedAt: number;
   uuid: string;
 }

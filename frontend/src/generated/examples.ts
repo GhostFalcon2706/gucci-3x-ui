@@ -236,6 +236,9 @@ export const EXAMPLES: Record<string, unknown> = {
     "allowedIPs": [
       ""
     ],
+    "allowedIsps": [
+      ""
+    ],
     "auth": "",
     "comment": "",
     "created_at": 0,
@@ -255,9 +258,11 @@ export const EXAMPLES: Record<string, unknown> = {
     "reverse": null,
     "secret": "ee1234567890abcdef1234567890abcd7777772e636c6f7564666c6172652e636f6d",
     "security": "",
+    "speedLevel": 0,
     "subId": "",
     "tgId": 0,
     "totalGB": 0,
+    "trafficMultiplier": 0,
     "updated_at": 0
   },
   "ClientInbound": {
@@ -269,6 +274,9 @@ export const EXAMPLES: Record<string, unknown> = {
   "ClientRecord": {
     "adTag": "",
     "allowedIPs": "",
+    "allowedIsps": [
+      ""
+    ],
     "auth": "",
     "comment": "",
     "createdAt": 0,
@@ -288,9 +296,11 @@ export const EXAMPLES: Record<string, unknown> = {
     "reverse": null,
     "secret": "",
     "security": "",
+    "speedLevel": 0,
     "subId": "",
     "tgId": 0,
     "totalGB": 0,
+    "trafficMultiplier": 0,
     "updatedAt": 0,
     "uuid": ""
   },

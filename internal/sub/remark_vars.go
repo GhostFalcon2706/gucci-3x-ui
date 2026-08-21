@@ -632,6 +632,18 @@ func inboundSecurity(inbound *model.Inbound) string {
 	return security
 }
 
+// withMultiplierSuffix appends the accounting-coefficient tag to a config name,
+// e.g. "Germany-01 (x2)" for a client whose traffic is charged double. Clients
+// on the default 1x coefficient are left untouched, and the suffix is never
+// added twice (a remark template may already include {{MULTIPLIER}}).
+func withMultiplierSuffix(client model.Client, remark string) string {
+	suffix := model.MultiplierSuffix(client.TrafficMultiplier)
+	if suffix == "" || strings.Contains(remark, strings.TrimSpace(suffix)) {
+		return remark
+	}
+	return remark + suffix
+}
+
 // genTemplatedRemark expands the remark template for one client. hostRemark is
 // the host endpoint's remark (empty for a plain inbound); it backs the {{HOST}}
 // token only and never substitutes the inbound remark as the config name.
@@ -651,9 +663,9 @@ func (s *SubService) genTemplatedRemark(inbound *model.Inbound, client model.Cli
 		tmpl = filterRemarkTemplate(translateUISingleBrackets(s.remarkTemplate), displayRemoveTokens)
 	}
 	if out := expandRemarkVars(tmpl, ctx); strings.TrimSpace(out) != "" {
-		return out
+		return withMultiplierSuffix(client, out)
 	}
-	return ctx.configName()
+	return withMultiplierSuffix(client, ctx.configName())
 }
 
 // genHostRemark builds one host endpoint's remark for a specific client. With a
@@ -664,5 +676,5 @@ func (s *SubService) genHostRemark(inbound *model.Inbound, client model.Client, 
 	if s.remarkTemplate != "" {
 		return s.genTemplatedRemark(inbound, client, hostRemark, transport)
 	}
-	return fallbackRemark(inbound.Remark, hostRemark, client.Email)
+	return withMultiplierSuffix(client, fallbackRemark(inbound.Remark, hostRemark, client.Email))
 }
