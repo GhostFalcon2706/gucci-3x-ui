@@ -1056,7 +1056,7 @@ export function preferPublicHost(browserHost: string, publicHost: string): strin
 // `this.clients` getter, which used isSSMultiUser to gate). Returns null
 // for SS single-user, http, mixed, tunnel, wireguard, hysteria2-without-
 // clients, and any protocol without a clients array.
-type ClientShape = { id?: string; security?: VmessSecurity; flow?: VlessClient['flow']; password?: string; auth?: string; secret?: string; email?: string; subId?: string; trafficMultiplier?: number };
+type ClientShape = { id?: string; security?: VmessSecurity; flow?: VlessClient['flow']; password?: string; auth?: string; secret?: string; email?: string; subId?: string };
 
 // Mirror of the Go subKey: the stable per-client identity spx derivation
 // keys on — subscription id first, unique email as the fallback.
@@ -1162,16 +1162,6 @@ export interface GenAllLinksInput {
 // when there are no external proxies. The panel copy/QR remark is the inbound
 // remark plus the externalProxy remark, dash-joined (the configurable
 // subscription remark model was removed; subscription output uses the template).
-// clientMultiplierSuffix renders " (x2)" / " (x1.5)" for a client on a traffic
-// coefficient other than 1. Unset or 1 yields no suffix.
-export function clientMultiplierSuffix(client?: { trafficMultiplier?: number } | null): string {
-  const raw = Number(client?.trafficMultiplier ?? 1);
-  if (!Number.isFinite(raw) || raw <= 0) return '';
-  const rounded = Math.round(raw * 100) / 100;
-  if (rounded === 1) return '';
-  return ` (x${rounded})`;
-}
-
 export function genAllLinks(input: GenAllLinksInput): GenAllLinksEntry[] {
   const {
     inbound,
@@ -1184,14 +1174,8 @@ export function genAllLinks(input: GenAllLinksInput): GenAllLinksEntry[] {
   const addr = resolveAddr(inbound, hostOverride, fallbackHostname);
   const port = inbound.port;
 
-  // A client whose traffic is billed with a coefficient carries it in the
-  // config name, e.g. "Germany-01 (x2)", so the user sees the cost of the
-  // config in every app that shows the remark. Mirrors the backend's
-  // MultiplierSuffix used for subscription output.
-  const multiplierSuffix = clientMultiplierSuffix(client);
-
   const composeRemark = (proxyRemark: string): string =>
-    [remark, proxyRemark].filter((x) => x.length > 0).join('-') + multiplierSuffix;
+    [remark, proxyRemark].filter((x) => x.length > 0).join('-');
 
   const externals = inbound.streamSettings?.externalProxy;
   if (!externals || externals.length === 0) {
